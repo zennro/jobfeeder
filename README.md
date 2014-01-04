@@ -1,4 +1,4 @@
-jobfeeder
+twitterbot
 =========
 
 An IRC bot written in Python used for getting Twitter updates.
@@ -11,5 +11,5 @@ Twitter (pip install twitter)
 Running
 -------
 ```
-python jobfeeder.py
+python twitterbot.py
 ```

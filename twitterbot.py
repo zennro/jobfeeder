@@ -9,23 +9,24 @@ from twisted.internet import reactor, protocol
 
 from twitter import *
 
-import time
-import sys
-
 consumer_key = ""
 consumer_secret = ""
 access_key = ""
 access_secret = ""
 
+# https://github.com/sixohsix/twitter/blob/master/twitter/oauth.py#L78
 auth = OAuth(access_key, access_secret, consumer_key, consumer_secret)
+
+# https://github.com/sixohsix/twitter/blob/master/twitter/api.py#L241
 t = Twitter(auth = auth)
 
+# twitter account
 user = "jobfeedirc"
 
 class Bot(irc.IRCClient):
 	def __init__(self):
-		self.nickname = "JobFeeder"
-		self.channel = "##jobfeed"
+		self.nickname = "JobFeeder" # irc nick
+		self.channel = "##jobfeed"	# irc channel (TODO: self.channel = [])
 		self.oldresults = ""
 
 	def connectionMade(self):
@@ -80,6 +81,8 @@ class Bot(irc.IRCClient):
 			return "error"
 	
 	def sendMessage(self, msg):
+		# before you sendMessage, be sure to prepMessage(msg)
+		# TODO: have prepMessage here, instead of seperate function
 		self.sendLine("PRIVMSG %s :%s" % (self.channel, msg))
 
 class BotFactory(protocol.ClientFactory):

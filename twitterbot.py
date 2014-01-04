@@ -41,7 +41,7 @@ class Bot(irc.IRCClient):
 	def joined(self, channel):
 		print "JOINED " + channel
 		lc = LoopingCall(self.checkTwitter)
-		lc.start(60)
+		lc.start(70)
 
 	def privmsg(self, user, channel, msg):
 		user = user.split("!", 1)[0]
@@ -56,15 +56,29 @@ class Bot(irc.IRCClient):
 
 	def checkTwitter(self):
 		self.results = t.statuses.home_timeline(screen_name=user)
+		if self.oldresults != "":
 
-		if self.oldresults != "" and self.oldresults[0]["text"] != self.results[0]["text"]:
+			if self.oldresults != "" and self.oldresults[0]["text"] != self.results[0]["text"]:
+				msg = self.results[0]["text"].encode("ascii", "ignore")
+				err = self.prepMessage(msg)
+				if err != "error":
+					self.sendMessage(msg)
+
+		else:
 			msg = self.results[0]["text"].encode("ascii", "ignore")
-			msg = msg.replace("\r", "")
-			msg = msg.replace("\n", "")
-			self.sendMessage(msg)
-			print msg
+			err = self.prepMessage(msg)
+			if err != "error":
+				self.sendMessage(msg)
+
 		self.oldresults = self.results
-		
+
+	def prepMessage(self, msg):
+		msg = msg.replace("\r", "").replace("\n", "")
+		if msg.find("job"):
+			return msg
+		else:
+			return "error"
+	
 	def sendMessage(self, msg):
 		self.sendLine("PRIVMSG %s :%s" % (self.channel, msg))
 

@@ -12,6 +12,9 @@ from twitter import *
 from config import *
 
 import re
+import requests
+import json
+import os
 
 # https://github.com/sixohsix/twitter/blob/master/twitter/oauth.py#L78
 auth = OAuth(access_key, access_secret, consumer_key, consumer_secret)
@@ -54,17 +57,24 @@ class Bot(irc.IRCClient):
 			print user + " says: " + msg
 			return
 
+		if msg.startswith("!monster"):
+			end = " ".join(msg.split(" ")[1:])
+			url = "http://rss.jobsearch.monster.com/rssquery.ashx?q=" + end
+			msg = self.shortener(url)
+			print msg
+			self.sendMessage(msg)
+
 	def checkTwitter(self):
 		self.results = t.statuses.home_timeline(screen_name=user) # variable to hold twitter timeline
 
 		if self.oldresults != "":
 
 			if self.oldresults != "" and self.oldresults[0]["text"] != self.results[0]["text"]:
-				msg = self.results[0]["text"].encode("ascii", "ignore")
+				msg = self.results[0]["text"]
 				self.sendMessage(msg)
 
 		else:
-			msg = self.results[0]["text"].encode("ascii", "ignore")
+			msg = self.results[0]["text"]
 			self.sendMessage(msg)
 
 		self.oldresults = self.results
@@ -77,12 +87,24 @@ class Bot(irc.IRCClient):
 			return True
 		else:	
 			return False
-		
-	
+
+	def shortener(self, url):
+		post_url = 'https://www.googleapis.com/urlshortener/v1/url'
+		payload = {"longUrl": url}
+		headers = {"content-type": "application/json"}
+		r = requests.post(post_url, data=json.dumps(payload), headers=headers)
+		open("tmp", "w").write(r.text)
+		data = json.load(open("tmp"))
+		os.remove("tmp")
+		return data["id"]
+
 	def sendMessage(self, msg, reg=""):
 		# used to send text to the IRC channels in self.channels
 		# sendMessage can take a message, and regex argument. If the regex arg is not included
 		# the message is sent without being filtered. Else, msg is ran through match.
+
+		msg = msg.encode("ascii", "ignore") # encode ascii
+
 		if reg != "":
 			if match(msg, reg) == False:
 				for i in self.channels:

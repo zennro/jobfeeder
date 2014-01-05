@@ -9,10 +9,9 @@ from twisted.internet import reactor, protocol
 
 from twitter import *
 
-consumer_key = ""
-consumer_secret = ""
-access_key = ""
-access_secret = ""
+from config import *
+
+import re
 
 # https://github.com/sixohsix/twitter/blob/master/twitter/oauth.py#L78
 auth = OAuth(access_key, access_secret, consumer_key, consumer_secret)
@@ -20,13 +19,12 @@ auth = OAuth(access_key, access_secret, consumer_key, consumer_secret)
 # https://github.com/sixohsix/twitter/blob/master/twitter/api.py#L241
 t = Twitter(auth = auth)
 
-# twitter account
-user = "jobfeedirc"
-
 class Bot(irc.IRCClient):
 	def __init__(self):
-		self.nickname = "JobFeeder" # irc nick
-		self.channel = "##jobfeed"	# irc channel (TODO: self.channel = [])
+		self.nickname = nickname # irc nick
+		self.channels = channels	# irc channels
+
+		# variable to hold old results in checkTwitter
 		self.oldresults = ""
 
 	def connectionMade(self):
@@ -37,7 +35,8 @@ class Bot(irc.IRCClient):
 		print "DISCONNECTED for " + reason
 
 	def signedOn(self):
-		self.join(self.channel)
+		for i in self.channels:
+			self.join(i)
 
 	def joined(self, channel):
 		print "JOINED " + channel
@@ -56,38 +55,45 @@ class Bot(irc.IRCClient):
 			return
 
 	def checkTwitter(self):
-		self.results = t.statuses.home_timeline(screen_name=user)
+		self.results = t.statuses.home_timeline(screen_name=user) # variable to hold twitter timeline
+
 		if self.oldresults != "":
 
 			if self.oldresults != "" and self.oldresults[0]["text"] != self.results[0]["text"]:
 				msg = self.results[0]["text"].encode("ascii", "ignore")
-				err = self.prepMessage(msg)
-				if err != "error":
-					self.sendMessage(msg)
+				self.sendMessage(msg)
 
 		else:
 			msg = self.results[0]["text"].encode("ascii", "ignore")
-			err = self.prepMessage(msg)
-			if err != "error":
-				self.sendMessage(msg)
+			self.sendMessage(msg)
 
 		self.oldresults = self.results
 
-	def prepMessage(self, msg):
-		msg = msg.replace("\r", "").replace("\n", "")
-		if msg.find("job"):
-			return msg
-		else:
-			return "error"
+	def match(self, msg, reg): # used to test if a regex is in a string
+		reg = re.compile(reg)
+		match = reg.match(msg)
+
+		if match:
+			return True
+		else:	
+			return False
+		
 	
-	def sendMessage(self, msg):
-		# before you sendMessage, be sure to prepMessage(msg)
-		# TODO: have prepMessage here, instead of seperate function
-		self.sendLine("PRIVMSG %s :%s" % (self.channel, msg))
+	def sendMessage(self, msg, reg=""):
+		# used to send text to the IRC channels in self.channels
+		# sendMessage can take a message, and regex argument. If the regex arg is not included
+		# the message is sent without being filtered. Else, msg is ran through match.
+		if reg != "":
+			if match(msg, reg) == False:
+				for i in self.channels:
+					self.sendLine("PRIVMSG %s :%s" % (i, msg))
+		else:
+				for i in self.channels:
+					self.sendLine("PRIVMSG %s :%s" % (i, msg))
 
 class BotFactory(protocol.ClientFactory):
-	def __init__(self):
-		self.channel = "##jobfeed"
+	#def __init__(self):
+		# self.channel = "##jobfeed"
 
 	def buildProtocol(self, addr):
 		p = Bot()

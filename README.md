@@ -14,8 +14,6 @@ Requirements
 ```
 Twisted 		(pip install twisted)
 Twitter 		(pip install twitter)
-    BeautifulSoup4 	(pip install beautifulsoup4)
-    LXML 			(pip install lxml)
 ```
 
 Running

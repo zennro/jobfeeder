@@ -15,6 +15,7 @@ import re
 import requests
 import json
 import os
+import datetime
 
 # https://github.com/sixohsix/twitter/blob/master/twitter/oauth.py#L78
 auth = OAuth(access_key, access_secret, consumer_key, consumer_secret)
@@ -109,9 +110,15 @@ class Bot(irc.IRCClient):
 			if match(msg, reg) == False:
 				for i in self.channels:
 					self.sendLine("PRIVMSG %s :%s" % (i, msg))
+
+			log(msg)
 		else:
 				for i in self.channels:
 					self.sendLine("PRIVMSG %s :%s" % (i, msg))
+
+
+	def log(self, msg):
+		open(logfile, "w+").write(datetime.utcnow() + ":" + msg)
 
 class BotFactory(protocol.ClientFactory):
 	#def __init__(self):
